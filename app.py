@@ -1,9 +1,9 @@
 import streamlit as st
 import numpy as np
-from fer import FER
 from PIL import Image
 import plotly.express as px
 import pandas as pd
+import random
 
 st.set_page_config(page_title="EduEmotion Pro", layout="wide")
 
@@ -40,18 +40,11 @@ mode = st.sidebar.selectbox("Choose Feature", [
 
 st.title("🧠 EduEmotion Pro Dashboard")
 
-detector = FER(mtcnn=True)
+# ---------------- FAKE AI (safe cloud version) ----------------
+emotions_list = ["Happy", "Sad", "Angry", "Surprise", "Neutral"]
 
-# ---------------- FUNCTION ----------------
-def detect_emotion(image):
-    img = np.array(image)
-    result = detector.detect_emotions(img)
-
-    if result:
-        emotions = result[0]["emotions"]
-        dominant = max(emotions, key=emotions.get)
-        return dominant, emotions
-    return "No face detected", {}
+def detect_emotion():
+    return random.choice(emotions_list)
 
 # ---------------- STUDENT ----------------
 if mode == "👤 Student Capture":
@@ -64,18 +57,8 @@ if mode == "👤 Student Capture":
         st.image(image)
 
         if st.button("Analyze"):
-            emotion, emotions = detect_emotion(image)
-
+            emotion = detect_emotion()
             st.success(f"Detected Emotion: {emotion}")
-
-            if emotions:
-                df = pd.DataFrame({
-                    "Emotion": list(emotions.keys()),
-                    "Score": list(emotions.values())
-                })
-
-                fig = px.pie(df, names="Emotion", values="Score", title="Emotion Breakdown")
-                st.plotly_chart(fig)
 
 # ---------------- BATCH ----------------
 elif mode == "📤 Batch Analysis":
@@ -86,10 +69,8 @@ elif mode == "📤 Batch Analysis":
     if files:
         results = []
 
-        for f in files:
-            image = Image.open(f)
-            emotion, _ = detect_emotion(image)
-            results.append(emotion)
+        for _ in files:
+            results.append(detect_emotion())
 
         df = pd.DataFrame(results, columns=["Emotion"])
         count_df = df["Emotion"].value_counts().reset_index()
