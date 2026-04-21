@@ -1,7 +1,7 @@
 streamlit
 pandas
 plotly
-opencv-python-headless
 fer
 pillow
 numpy
+opencv-python-headless==4.8.1.78
