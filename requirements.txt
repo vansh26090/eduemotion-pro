@@ -1,0 +1,8 @@
+streamlit
+opencv-python
+numpy
+deepface
+plotly
+pandas
+pillow
+bcrypt
