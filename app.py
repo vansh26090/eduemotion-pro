@@ -3,96 +3,138 @@ import numpy as np
 from PIL import Image
 import pandas as pd
 import plotly.express as px
-from deepface import DeepFace
+import random
 from datetime import datetime
 
 # ---------------- PAGE CONFIG ----------------
-st.set_page_config(page_title="Emotion AI Pro", layout="wide")
-
-st.title("🧠 Emotion AI Pro (DeepFace CNN)")
+st.set_page_config(
+    page_title="EduEmotion Pro AI",
+    page_icon="🧠",
+    layout="wide"
+)
 
 # ---------------- SESSION ----------------
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
+
 if "history" not in st.session_state:
     st.session_state.history = []
 
-# ---------------- REAL AI FUNCTION ----------------
-def detect_emotion(image_array):
-    try:
-        result = DeepFace.analyze(
-            image_array,
-            actions=['emotion'],
-            enforce_detection=False
-        )
-        return result[0]['dominant_emotion']
-    except:
-        return "No Face Detected"
+# ---------------- LOGIN ----------------
+if not st.session_state.logged_in:
+    st.title("🔐 EduEmotion Pro Login")
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        username = st.text_input("Username")
+
+    with col2:
+        password = st.text_input("Password", type="password")
+
+    if st.button("Login"):
+        if username == "teacher" and password == "1234":
+            st.session_state.logged_in = True
+            st.rerun()
+        else:
+            st.error("Invalid credentials")
+
+    st.stop()
 
 # ---------------- SIDEBAR ----------------
-menu = st.sidebar.radio("Menu", [
+st.sidebar.title("🧠 EduEmotion AI")
+
+menu = st.sidebar.radio("Navigation", [
     "🏠 Dashboard",
-    "📸 Camera Detection",
-    "📤 Upload Image",
-    "📊 Batch Analysis",
+    "👤 Student Capture",
+    "📤 Batch Analysis",
     "📜 History"
 ])
 
+if st.sidebar.button("Logout"):
+    st.session_state.logged_in = False
+    st.rerun()
+
+# ---------------- FAKE AI (replace later with DeepFace if needed) ----------------
+emotions = ["Happy", "Sad", "Angry", "Surprise", "Neutral"]
+
+def detect_emotion():
+    return random.choice(emotions)
+
 # ---------------- DASHBOARD ----------------
 if menu == "🏠 Dashboard":
-    st.header("📊 AI Dashboard")
+    st.title("📊 AI Emotion Dashboard")
 
-    col1, col2, col3 = st.columns(3)
+    total = len(st.session_state.history)
 
-    col1.metric("Total Analyses", len(st.session_state.history))
-    col2.metric("AI Model", "DeepFace CNN")
-    col3.metric("Status", "Active")
+    emotion_count = {}
+    for h in st.session_state.history:
+        e = h["emotion"]
+        emotion_count[e] = emotion_count.get(e, 0) + 1
 
-    st.info("Real-time Emotion Detection System using DeepFace CNN Model")
+    col1, col2, col3, col4 = st.columns(4)
 
-# ---------------- CAMERA ----------------
-elif menu == "📸 Camera Detection":
-    st.header("📸 Live Camera Emotion Detection")
+    col1.metric("Total Scans", total)
+    col2.metric("Happy", emotion_count.get("Happy", 0))
+    col3.metric("Sad", emotion_count.get("Sad", 0))
+    col4.metric("Neutral", emotion_count.get("Neutral", 0))
 
-    img = st.camera_input("Capture Face")
+    st.markdown("---")
+
+    if total > 0:
+        df = pd.DataFrame(st.session_state.history)
+
+        chart = df["emotion"].value_counts().reset_index()
+        chart.columns = ["Emotion", "Count"]
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.subheader("📊 Emotion Pie Chart")
+            fig = px.pie(chart, names="Emotion", values="Count")
+            st.plotly_chart(fig)
+
+        with col2:
+            st.subheader("📈 Emotion Bar Chart")
+            fig2 = px.bar(chart, x="Emotion", y="Count")
+            st.plotly_chart(fig2)
+
+    else:
+        st.info("No data yet. Start capturing emotions.")
+
+    st.markdown("---")
+
+    st.subheader("🕒 Recent Activity")
+
+    if total > 0:
+        for h in st.session_state.history[-5:][::-1]:
+            st.write(f"🧠 {h['time']} → {h['emotion']}")
+    else:
+        st.warning("No activity yet")
+
+# ---------------- STUDENT CAPTURE ----------------
+elif menu == "👤 Student Capture":
+    st.title("📸 Student Emotion Capture")
+
+    img = st.camera_input("Take a picture")
 
     if img:
         image = Image.open(img)
         st.image(image, caption="Captured Image")
 
         if st.button("Analyze Emotion"):
-            emotion = detect_emotion(np.array(image))
+            emotion = detect_emotion()
 
             st.success(f"Detected Emotion: {emotion}")
 
             st.session_state.history.append({
                 "time": datetime.now().strftime("%H:%M:%S"),
-                "emotion": emotion,
-                "type": "Camera"
-            })
-
-# ---------------- UPLOAD ----------------
-elif menu == "📤 Upload Image":
-    st.header("📤 Upload Image Detection")
-
-    file = st.file_uploader("Upload Image", type=["jpg", "png", "jpeg"])
-
-    if file:
-        image = Image.open(file)
-        st.image(image, caption="Uploaded Image")
-
-        if st.button("Detect Emotion"):
-            emotion = detect_emotion(np.array(image))
-
-            st.success(f"Detected Emotion: {emotion}")
-
-            st.session_state.history.append({
-                "time": datetime.now().strftime("%H:%M:%S"),
-                "emotion": emotion,
-                "type": "Upload"
+                "emotion": emotion
             })
 
 # ---------------- BATCH ----------------
-elif menu == "📊 Batch Analysis":
-    st.header("📊 Batch Emotion Analysis")
+elif menu == "📤 Batch Analysis":
+    st.title("📂 Batch Emotion Analysis")
 
     files = st.file_uploader(
         "Upload multiple images",
@@ -101,20 +143,18 @@ elif menu == "📊 Batch Analysis":
     )
 
     if files:
-        emotions = []
+        results = []
 
         for file in files:
-            image = Image.open(file)
-            emotion = detect_emotion(np.array(image))
-            emotions.append(emotion)
+            emotion = detect_emotion()
+            results.append(emotion)
 
             st.session_state.history.append({
                 "time": datetime.now().strftime("%H:%M:%S"),
-                "emotion": emotion,
-                "type": "Batch"
+                "emotion": emotion
             })
 
-        df = pd.DataFrame(emotions, columns=["Emotion"])
+        df = pd.DataFrame(results, columns=["Emotion"])
 
         chart = df["Emotion"].value_counts().reset_index()
         chart.columns = ["Emotion", "Count"]
@@ -125,12 +165,12 @@ elif menu == "📊 Batch Analysis":
             st.dataframe(chart)
 
         with col2:
-            fig = px.bar(chart, x="Emotion", y="Count", title="Emotion Distribution")
+            fig = px.bar(chart, x="Emotion", y="Count")
             st.plotly_chart(fig)
 
 # ---------------- HISTORY ----------------
 elif menu == "📜 History":
-    st.header("📜 Detection History")
+    st.title("📜 Emotion History Log")
 
     if len(st.session_state.history) == 0:
         st.warning("No history yet")
