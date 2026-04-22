@@ -9,32 +9,45 @@ st.set_page_config(page_title="Emotion AI Pro", layout="wide")
 
 st.title("🧠 Emotion AI Pro")
 
-# ---------------- IMAGE EMOTION ----------------
-st.subheader("📤 Upload Image Emotion Detection")
-
+# ---------------- FUNCTION ----------------
 def detect_emotion(img):
     try:
         result = DeepFace.analyze(img, actions=['emotion'], enforce_detection=False)
         return result[0]['dominant_emotion']
     except:
-        return "No Face"
+        return "No Face Detected"
 
-img_file = st.file_uploader("Upload Image", type=["jpg", "png", "jpeg"])
+# ---------------- CAMERA ----------------
+st.subheader("📸 Camera Emotion Detection")
 
-if img_file:
-    image = Image.open(img_file)
-    st.image(image)
+camera_image = st.camera_input("Take a picture")
+
+if camera_image is not None:
+    image = Image.open(camera_image)
+    st.image(image, caption="Captured Image")
+
+    emotion = detect_emotion(np.array(image))
+    st.success(f"Detected Emotion: {emotion}")
+
+# ---------------- IMAGE UPLOAD ----------------
+st.subheader("📤 Upload Image")
+
+uploaded_file = st.file_uploader("Upload an image", type=["jpg", "png", "jpeg"])
+
+if uploaded_file:
+    image = Image.open(uploaded_file)
+    st.image(image, caption="Uploaded Image")
 
     if st.button("Analyze Image"):
         emotion = detect_emotion(np.array(image))
         st.success(f"Detected Emotion: {emotion}")
 
 # ---------------- BATCH ANALYSIS ----------------
-st.subheader("📊 Batch Emotion Analysis")
+st.subheader("📊 Batch Analysis")
 
 files = st.file_uploader(
-    "Upload Multiple Images",
-    type=["jpg", "png"],
+    "Upload multiple images",
+    type=["jpg", "png", "jpeg"],
     accept_multiple_files=True
 )
 
