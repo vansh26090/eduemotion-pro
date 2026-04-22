@@ -1,10 +1,9 @@
-setuptools
-wheel
 streamlit
 numpy
 pandas
 plotly
 Pillow
-opencv-python-headless
 deepface
-tf-keras
+tensorflow
+keras
+opencv-python-headless
