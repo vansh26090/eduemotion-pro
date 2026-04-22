@@ -3,7 +3,3 @@ numpy
 pandas
 plotly
 Pillow
-deepface
-tensorflow
-keras
-opencv-python-headless
