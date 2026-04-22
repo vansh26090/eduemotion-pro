@@ -1,80 +1,81 @@
 import streamlit as st
 import numpy as np
 from PIL import Image
-import plotly.express as px
+import cv2
+from deepface import DeepFace
 import pandas as pd
-import random
+import plotly.express as px
 
-st.set_page_config(page_title="EduEmotion Pro", layout="wide")
+st.set_page_config(page_title="Emotion AI Pro", layout="wide")
 
-# ---------------- LOGIN ----------------
-if "logged_in" not in st.session_state:
-    st.session_state.logged_in = False
+st.title("🧠 Emotion AI Pro (Real Detection)")
 
-if not st.session_state.logged_in:
-    st.title("🔐 Login")
+# ---------------- CAMERA MODE ----------------
+st.subheader("📸 Live Emotion Detection")
 
-    username = st.text_input("Username")
-    password = st.text_input("Password", type="password")
+run = st.checkbox("Start Webcam")
 
-    if st.button("Login"):
-        if username == "teacher" and password == "1234":
-            st.session_state.logged_in = True
-            st.rerun()
-        else:
-            st.error("Wrong credentials")
+frame_placeholder = st.image([])
 
-    st.stop()
+camera = cv2.VideoCapture(0)
 
-# ---------------- MAIN ----------------
-st.sidebar.title("🧠 EduEmotion Pro")
+def detect_emotion(frame):
+    try:
+        result = DeepFace.analyze(frame, actions=['emotion'], enforce_detection=False)
+        return result[0]['dominant_emotion']
+    except:
+        return "No Face"
 
-if st.sidebar.button("Logout"):
-    st.session_state.logged_in = False
-    st.rerun()
+if run:
+    while True:
+        ret, frame = camera.read()
+        if not ret:
+            st.error("Camera not working")
+            break
 
-mode = st.sidebar.selectbox("Choose Feature", [
-    "👤 Student Capture",
-    "📤 Batch Analysis"
-])
+        emotion = detect_emotion(frame)
 
-st.title("🧠 EduEmotion Pro Dashboard")
+        cv2.putText(frame, emotion, (50, 50),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1,
+                    (0, 255, 0), 2)
 
-# ---------------- FAKE AI (safe cloud version) ----------------
-emotions_list = ["Happy", "Sad", "Angry", "Surprise", "Neutral"]
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        frame_placeholder.image(frame)
 
-def detect_emotion():
-    return random.choice(emotions_list)
+camera.release()
 
-# ---------------- STUDENT ----------------
-if mode == "👤 Student Capture":
-    st.subheader("📸 Capture Your Emotion")
+# ---------------- IMAGE UPLOAD ----------------
+st.subheader("📤 Upload Image Emotion Detection")
 
-    img = st.camera_input("Take a photo")
+img_file = st.file_uploader("Upload Image", type=["jpg", "png", "jpeg"])
 
-    if img:
-        image = Image.open(img)
-        st.image(image)
+if img_file:
+    image = Image.open(img_file)
+    st.image(image, caption="Uploaded Image")
 
-        if st.button("Analyze"):
-            emotion = detect_emotion()
-            st.success(f"Detected Emotion: {emotion}")
+    if st.button("Analyze Image"):
+        result = DeepFace.analyze(np.array(image), actions=['emotion'], enforce_detection=False)
+        emotion = result[0]['dominant_emotion']
 
-# ---------------- BATCH ----------------
-elif mode == "📤 Batch Analysis":
-    st.subheader("📤 Upload Images")
+        st.success(f"Detected Emotion: {emotion}")
 
-    files = st.file_uploader("Upload images", accept_multiple_files=True)
+# ---------------- BATCH ANALYSIS ----------------
+st.subheader("📊 Batch Emotion Analysis")
 
-    if files:
-        results = []
+files = st.file_uploader("Upload Multiple Images", type=["jpg", "png"], accept_multiple_files=True)
 
-        for _ in files:
-            results.append(detect_emotion())
+if files:
+    emotions = []
 
-        df = pd.DataFrame(results, columns=["Emotion"])
-        count_df = df["Emotion"].value_counts().reset_index()
-        count_df.columns = ["Emotion", "Count"]
+    for file in files:
+        image = Image.open(file)
+        result = DeepFace.analyze(np.array(image), actions=['emotion'], enforce_detection=False)
+        emotions.append(result[0]['dominant_emotion'])
 
-        fig = px.bar(count_df, x="Emotion", y="Count", title="Class Emotion")
-        st.plotly_chart(fig)
+    df = pd.DataFrame(emotions, columns=["Emotion"])
+
+    chart = df["Emotion"].value_counts().reset_index()
+    chart.columns = ["Emotion", "Count"]
+
+    fig = px.bar(chart, x="Emotion", y="Count", title="Emotion Distribution")
+    st.plotly_chart(fig)
