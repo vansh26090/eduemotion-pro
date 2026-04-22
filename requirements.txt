@@ -1,5 +1,9 @@
 streamlit
+numpy
 pandas
 plotly
-pillow
-numpy
+Pillow
+opencv-python-headless
+deepface
+tensorflow
+keras
