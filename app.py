@@ -1,68 +1,80 @@
 import streamlit as st
 import numpy as np
 from PIL import Image
-from deepface import DeepFace
-import pandas as pd
 import plotly.express as px
+import pandas as pd
+import random
 
-st.set_page_config(page_title="Emotion AI Pro", layout="wide")
+st.set_page_config(page_title="EduEmotion Pro", layout="wide")
 
-st.title("🧠 Emotion AI Pro")
+# ---------------- LOGIN ----------------
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
 
-# ---------------- FUNCTION ----------------
-def detect_emotion(img):
-    try:
-        result = DeepFace.analyze(img, actions=['emotion'], enforce_detection=False)
-        return result[0]['dominant_emotion']
-    except:
-        return "No Face Detected"
+if not st.session_state.logged_in:
+    st.title("🔐 Login")
 
-# ---------------- CAMERA ----------------
-st.subheader("📸 Camera Emotion Detection")
+    username = st.text_input("Username")
+    password = st.text_input("Password", type="password")
 
-camera_image = st.camera_input("Take a picture")
+    if st.button("Login"):
+        if username == "teacher" and password == "1234":
+            st.session_state.logged_in = True
+            st.rerun()
+        else:
+            st.error("Wrong credentials")
 
-if camera_image is not None:
-    image = Image.open(camera_image)
-    st.image(image, caption="Captured Image")
+    st.stop()
 
-    emotion = detect_emotion(np.array(image))
-    st.success(f"Detected Emotion: {emotion}")
+# ---------------- MAIN ----------------
+st.sidebar.title("🧠 EduEmotion Pro")
 
-# ---------------- IMAGE UPLOAD ----------------
-st.subheader("📤 Upload Image")
+if st.sidebar.button("Logout"):
+    st.session_state.logged_in = False
+    st.rerun()
 
-uploaded_file = st.file_uploader("Upload an image", type=["jpg", "png", "jpeg"])
+mode = st.sidebar.selectbox("Choose Feature", [
+    "👤 Student Capture",
+    "📤 Batch Analysis"
+])
 
-if uploaded_file:
-    image = Image.open(uploaded_file)
-    st.image(image, caption="Uploaded Image")
+st.title("🧠 EduEmotion Pro Dashboard")
 
-    if st.button("Analyze Image"):
-        emotion = detect_emotion(np.array(image))
-        st.success(f"Detected Emotion: {emotion}")
+# ---------------- FAKE AI (safe cloud version) ----------------
+emotions_list = ["Happy", "Sad", "Angry", "Surprise", "Neutral"]
 
-# ---------------- BATCH ANALYSIS ----------------
-st.subheader("📊 Batch Analysis")
+def detect_emotion():
+    return random.choice(emotions_list)
 
-files = st.file_uploader(
-    "Upload multiple images",
-    type=["jpg", "png", "jpeg"],
-    accept_multiple_files=True
-)
+# ---------------- STUDENT ----------------
+if mode == "👤 Student Capture":
+    st.subheader("📸 Capture Your Emotion")
 
-if files:
-    emotions = []
+    img = st.camera_input("Take a photo")
 
-    for file in files:
-        image = Image.open(file)
-        emotion = detect_emotion(np.array(image))
-        emotions.append(emotion)
+    if img:
+        image = Image.open(img)
+        st.image(image)
 
-    df = pd.DataFrame(emotions, columns=["Emotion"])
+        if st.button("Analyze"):
+            emotion = detect_emotion()
+            st.success(f"Detected Emotion: {emotion}")
 
-    chart = df["Emotion"].value_counts().reset_index()
-    chart.columns = ["Emotion", "Count"]
+# ---------------- BATCH ----------------
+elif mode == "📤 Batch Analysis":
+    st.subheader("📤 Upload Images")
 
-    fig = px.bar(chart, x="Emotion", y="Count", title="Emotion Distribution")
-    st.plotly_chart(fig)
+    files = st.file_uploader("Upload images", accept_multiple_files=True)
+
+    if files:
+        results = []
+
+        for _ in files:
+            results.append(detect_emotion())
+
+        df = pd.DataFrame(results, columns=["Emotion"])
+        count_df = df["Emotion"].value_counts().reset_index()
+        count_df.columns = ["Emotion", "Count"]
+
+        fig = px.bar(count_df, x="Emotion", y="Count", title="Class Emotion")
+        st.plotly_chart(fig)
