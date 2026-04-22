@@ -5,5 +5,4 @@ plotly
 Pillow
 opencv-python-headless
 deepface
-tensorflow
-keras
+tf-keras
