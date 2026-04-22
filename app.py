@@ -6,7 +6,7 @@ import plotly.express as px
 from deepface import DeepFace
 from datetime import datetime
 
-# ---------------- CONFIG ----------------
+# ---------------- PAGE CONFIG ----------------
 st.set_page_config(page_title="Emotion AI Pro", layout="wide")
 
 st.title("🧠 Emotion AI Pro (DeepFace CNN)")
@@ -15,7 +15,7 @@ st.title("🧠 Emotion AI Pro (DeepFace CNN)")
 if "history" not in st.session_state:
     st.session_state.history = []
 
-# ---------------- REAL EMOTION FUNCTION ----------------
+# ---------------- REAL AI FUNCTION ----------------
 def detect_emotion(image_array):
     try:
         result = DeepFace.analyze(
@@ -27,30 +27,30 @@ def detect_emotion(image_array):
     except:
         return "No Face Detected"
 
-# ---------------- SIDEBAR MENU ----------------
-menu = st.sidebar.radio("Navigation", [
+# ---------------- SIDEBAR ----------------
+menu = st.sidebar.radio("Menu", [
     "🏠 Dashboard",
-    "📸 Camera",
-    "📤 Upload",
-    "📊 Batch",
+    "📸 Camera Detection",
+    "📤 Upload Image",
+    "📊 Batch Analysis",
     "📜 History"
 ])
 
 # ---------------- DASHBOARD ----------------
 if menu == "🏠 Dashboard":
-    st.header("📊 Dashboard")
+    st.header("📊 AI Dashboard")
 
     col1, col2, col3 = st.columns(3)
 
-    col1.metric("Total Scans", len(st.session_state.history))
+    col1.metric("Total Analyses", len(st.session_state.history))
     col2.metric("AI Model", "DeepFace CNN")
     col3.metric("Status", "Active")
 
-    st.info("Real AI Emotion Detection System")
+    st.info("Real-time Emotion Detection System using DeepFace CNN Model")
 
 # ---------------- CAMERA ----------------
-elif menu == "📸 Camera":
-    st.header("📸 Camera Emotion Detection")
+elif menu == "📸 Camera Detection":
+    st.header("📸 Live Camera Emotion Detection")
 
     img = st.camera_input("Capture Face")
 
@@ -58,7 +58,7 @@ elif menu == "📸 Camera":
         image = Image.open(img)
         st.image(image, caption="Captured Image")
 
-        if st.button("Detect Emotion"):
+        if st.button("Analyze Emotion"):
             emotion = detect_emotion(np.array(image))
 
             st.success(f"Detected Emotion: {emotion}")
@@ -70,16 +70,16 @@ elif menu == "📸 Camera":
             })
 
 # ---------------- UPLOAD ----------------
-elif menu == "📤 Upload":
-    st.header("📤 Upload Image")
+elif menu == "📤 Upload Image":
+    st.header("📤 Upload Image Detection")
 
-    file = st.file_uploader("Upload image", type=["jpg", "png", "jpeg"])
+    file = st.file_uploader("Upload Image", type=["jpg", "png", "jpeg"])
 
     if file:
         image = Image.open(file)
-        st.image(image)
+        st.image(image, caption="Uploaded Image")
 
-        if st.button("Analyze"):
+        if st.button("Detect Emotion"):
             emotion = detect_emotion(np.array(image))
 
             st.success(f"Detected Emotion: {emotion}")
@@ -91,8 +91,8 @@ elif menu == "📤 Upload":
             })
 
 # ---------------- BATCH ----------------
-elif menu == "📊 Batch":
-    st.header("📊 Batch Analysis")
+elif menu == "📊 Batch Analysis":
+    st.header("📊 Batch Emotion Analysis")
 
     files = st.file_uploader(
         "Upload multiple images",
